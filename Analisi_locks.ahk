@@ -4,19 +4,10 @@
 * v1.0
 */
 
-#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
-;#Warn  ; Enable warnings to assist with detecting common errors.
-SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
-SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
-
-/* TO-DO:
-* ----------------------------------------------
-* + Ricavare il login dalla stringa clientapp
-* - Scorrere l'array AllResult e cercare per ogni Id la max(Duration), quindi salvarla nell'array Result
-* + Rendere la compilazione del file Excel una funzione
-* - Dare un riscontro grafico durante la compilazione
-*/
-
+#NoEnv
+;#Warn
+SendMode Input 
+SetWorkingDir %A_ScriptDir% 
 
 
 /*
@@ -125,36 +116,41 @@ ExportInExcel(Data)
 	oExcel.Range("A2").Select
 
 	; Valorizza le celle
-	for i, row in Data
+	for i, row in Data{
 		for j, col in row
 			oExcel.ActiveCell.Offset( i-1,j-1).Value := col
+		_tmp := (i * 100)/Data.Length()
+		Progress, %_tmp% , , Creazione file Excel in corso, Excel progress
+	}
+
+	
 
 	; Rimuovi la colonna con lo StartTime
 	oExcel.Columns(2).EntireColumn.Delete
+	oExcel.Columns(10).EntireColumn.Delete
 
 
 	; oExcel.Range("A3").Formula := "=SOMMA(A1:A2)" ; set formula for cell A3 to SUM(A1:A2)
 	; oExcel.Range("A3").Borders(8).LineStyle := 1 ; set top border line style for cell A3 (xlEdgeTop = 8, xlContinuous = 1)
 	; oExcel.Range("A3").Borders(8).Weight := 2 ; set top border weight for cell A3 (xlThin = 2)
 	; oExcel.Range("A3").Font.Bold := 1 ; set bold font for cell A3
-
+	
 	; Abilita l'autofit
-	;oExcel.Range("A1:G" Data.Length()).Select
-	;oExcel.Selection.Columns.AutoFit
-	;oExcel.Range("A2").Select
+	oExcel.Range("A1:H" Data.Length()).Select
+	oExcel.Selection.Columns.AutoFit
+	oExcel.Range("A2").Select
 	oExcel.Visible := 1
 }
 	
 	
-/*
-* Selezione del file di input
-*/
+
+; Selezione del file di input
 FileSelectFile, inputFilePath, 3, %TEMP_DIR%,Selezionare il trace file, *.xml
 If (inputFilePath = "")
 	ExitApp
 FileCopy, %inputFilePath%, %TEMP_FILE%, 1
 
-
+; Modifica del working file
 run, %EDITOR_PATH% -multiInst -nosession %TEMP_FILE%
 WinWaitActive, %TEMP_FILE% - Notepad++, , 2
 Sleep 100
@@ -165,22 +161,24 @@ Sleep 1000
 WinClose, %TEMP_FILE% - Notepad++
 WinWaitClose, %TEMP_FILE% - Notepad++, , 2
 
-
+; Recupero degli eventi
 FileRead, inputFile, %TEMP_FILE%
 inputFile := StrX(inputFile, "<Events>", 1, StrLen("<Events>"), "</Events>", 0, StrLen("</Events>"), "")
 
-
+; Lettura degli eventi
 While _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 {
-	;GESTIONE LOCK
+	; GESTIONE LOCK
 	If ((_report := StrX(_event, LOCK_BEGIN_STR, 1, 0, LOCK_END_STR, 1, 0, "")) != "")
 	{
 		; Lettura dati
 		_blocked  := StrX(_report, PROC_BEGIN_STR, 1, 0, PROC_END_STR, 1, 0, "")
-		_id 	  := StrX(_blocked, ID_BEGIN_STR, 1, StrLen(ID_BEGIN_STR), ID_END_STR, 1, StrLen(ID_END_STR), "")
 		_client1  := StrX(_blocked, "clientapp=""", 1, StrLen("clientapp="""), """", 1, StrLen(""""), "")
 		_login1   := StrX(_blocked, LOGIN_BEGIN_STR, 1, StrLen(LOGIN_BEGIN_STR), LOGIN_END_STR, 1, StrLen(LOGIN_END_STR), "")
 		_query1   := StrX(_blocked, QUERY_BEGIN_STR, 1, StrLen(QUERY_BEGIN_STR), QUERY_END_STR, 1, StrLen(QUERY_END_STR), "")
+		_processId:= StrX(_blocked, ID_BEGIN_STR, 1, StrLen(ID_BEGIN_STR), ID_END_STR, 1, StrLen(ID_END_STR), "")
+		_ownerId  := StrX(_blocked, "ownerId=""", 1, StrLen("ownerId="""), """", 1, StrLen(""""), "")
+		_desc     := StrX(_blocked, "XDES=""", 1, StrLen("XDES="""), """", 1, StrLen(""""), "")
 		
 		_blocking := StrX(_report, PROC2_BEGIN_STR, 1, 0, PROC2_END_STR, 1, 0, "")
 		_client2  := StrX(_blocking, "clientapp=""", 1, StrLen("clientapp="""), """", 1, StrLen(""""), "")
@@ -198,20 +196,21 @@ While _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 			_login2 := SubStr(_client2, 67, StrLen(SubStr(_client2, 67))-10)
 		_login1 := StrReplace(_login1, "PEDROLLOSPA\", "")
 		_login2 := StrReplace(_login2, "PEDROLLOSPA\", "")
-		_duration := intParse(_duration)/1000
+		_duration := Floor(intParse(_duration)/1000000)
 		_date := SubStr(_startTime,1,10)
 		_time := SubStr(SubStr(_startTime, 1, StrLen(_startTime)-6),12)
 		_startTime := SubStr(_startTime,1,10) " " SubStr(SubStr(_startTime, 1, StrLen(_startTime)-6),12)
+		_id := _processId _ownerId _desc
 		
+		; Scrittura dati
 		AllResult.Push(["lock", _startTime, _date, _time, _duration, _login1, _query1, _login2, _query2, _id])
-		
-		if(_duration <= 9999)
+		if(_duration < 10)
 		{
 			LockCount := LockCount + 1	
-			Result.Push(["lock", _startTime, _date, _time, _duration, _login1, _query1, _login2, _query2])
+			Result.Push(["lock", _startTime, _date, _time, _duration, _login1, _query1, _login2, _query2, _id])
 		}
 	}
-	;GESTIONE DEADLOCK
+	; GESTIONE DEADLOCK
 	Else If ((_report := StrX(_event, DEADLOCK_BEGIN_STR, 1, 0, DEADLOCK_END_STR, 1, 0, "")) != "")
 	{
 		DeadlockCount := DeadlockCount + 1
@@ -224,11 +223,34 @@ While _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 If FileExist(TEMP_FILE)
 	FileDelete, %TEMP_FILE%
 
-;Ordina gli array in base allo start time
+; Ordina gli array in base allo start time
 SortArray2DByElement(Result, 2)
 SortArray2DByElement(AllResult, 2)
 
-ExportInExcel(AllResult)
+max := 0
+prevId := AllResult[1][10]
+for i, row in AllResult
+{
+	if( row[10] != prevId )
+	{
+		for _i, _row in Result
+		{
+			if( _row[10] = prevId )
+			{
+				_row[5] := max
+				break
+			}		
+		}
+		max := 0
+		prevId := row[10]
+	}
+	if(row[5] > max)
+		max := row[5]
+}
+
+
+; Export dati in excel
+ExportInExcel(Result)
 
 ExitApp
 
