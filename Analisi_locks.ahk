@@ -13,8 +13,6 @@ SetWorkingDir %A_ScriptDir%
 /*
 * VARIABILI GLOBALI
 */
-		EDITOR_PATH := "C:\Program Files (x86)\Notepad++\notepad++.exe"
-
 		   TEMP_DIR := "D:\Temp\PEDROLLO"
 		  TEMP_FILE := "D:\Temp\PEDROLLO\temporary_trace.xml"
 
@@ -100,8 +98,7 @@ SortArray2DByElement(ByRef Array, Element) {
 /*
 * Export array Data in Excel
 */
-ExportInExcel(Data, Intestazioni)
-{
+ExportInExcel(Data, Intestazioni){
 	; Crea nuovo foglio excel
 	oExcel := ComObjCreate("Excel.Application")
 	oExcel.Workbooks.Add 
@@ -214,11 +211,13 @@ While _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 	; GESTIONE DEADLOCK
 	Else If ((_report := StrX(_event, DEADLOCK_BEGIN_STR, 1, 0, DEADLOCK_END_STR, 1, 0, "")) != "")
 	{
+		; da implementare
 		DeadlockCount := DeadlockCount + 1
 	}
 	EventCount := EventCount + 1
 	GuiControl,,ElabProgress,%EventCount%
 }
+GuiControl,,ElabProgress,100
 
 If FileExist(TEMP_FILE)
 	FileDelete, %TEMP_FILE%
