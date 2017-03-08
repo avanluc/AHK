@@ -1,7 +1,7 @@
 ﻿/*
 * Analisi_locks.ahk
 * Avanzini Luca - 07/03/2017
-* v1.0
+* v1.02
 */
 
 #NoEnv
@@ -100,7 +100,7 @@ SortArray2DByElement(ByRef Array, Element) {
 /*
 * Export array Data in Excel
 */
-ExportInExcel(Data)
+ExportInExcel(Data, Intestazioni)
 {
 	; Crea nuovo foglio excel
 	oExcel := ComObjCreate("Excel.Application")
@@ -108,7 +108,6 @@ ExportInExcel(Data)
 	oExcel.Range("A1").Select
 
 	; Valorizza la riga di intestazione
-	Intestazioni := ["TIPO", "START TIME", "DATA", "TIME", "DURATION", "LOGIN1", "QUERY1", "LOGIN2", "QUERY2"]
 	for i, desc in Intestazioni
 		oExcel.ActiveCell.Offset(0,i-1).Value := desc
 	oExcel.Range("A1:I1").Interior.ColorIndex := 1
@@ -120,15 +119,12 @@ ExportInExcel(Data)
 		for j, col in row
 			oExcel.ActiveCell.Offset( i-1,j-1).Value := col
 		_tmp := (i * 100)/Data.Length()
-		Progress, %_tmp% , , Creazione file Excel in corso, Excel progress
+		GuiControl,,ExcelProgress,%_tmp%
 	}
 
-	
-
 	; Rimuovi la colonna con lo StartTime
-	oExcel.Columns(2).EntireColumn.Delete
 	oExcel.Columns(10).EntireColumn.Delete
-
+	oExcel.Columns(2).EntireColumn.Delete
 
 	; oExcel.Range("A3").Formula := "=SOMMA(A1:A2)" ; set formula for cell A3 to SUM(A1:A2)
 	; oExcel.Range("A3").Borders(8).LineStyle := 1 ; set top border line style for cell A3 (xlEdgeTop = 8, xlContinuous = 1)
@@ -149,21 +145,26 @@ FileSelectFile, inputFilePath, 3, %TEMP_DIR%,Selezionare il trace file, *.xml
 If (inputFilePath = "")
 	ExitApp
 FileCopy, %inputFilePath%, %TEMP_FILE%, 1
+FileRead, inputFile, %TEMP_FILE%
 
-; Modifica del working file
-run, %EDITOR_PATH% -multiInst -nosession %TEMP_FILE%
-WinWaitActive, %TEMP_FILE% - Notepad++, , 2
-Sleep 100
-Send, ^+9
-Sleep 1000
-Send, ^+8
-Sleep 1000
-WinClose, %TEMP_FILE% - Notepad++
-WinWaitClose, %TEMP_FILE% - Notepad++, , 2
+; Modifica del working file per risolvere i riferimenti HTML
+inputFile := StrReplace(inputFile, "&lt;", "<")
+inputFile := StrReplace(inputFile, "&gt;", ">")
+inputFile := StrReplace(inputFile, "&amp;apos;", "'")
+inputFile := StrReplace(inputFile, "&amp;quot;", """")
 
 ; Recupero degli eventi
-FileRead, inputFile, %TEMP_FILE%
 inputFile := StrX(inputFile, "<Events>", 1, StrLen("<Events>"), "</Events>", 0, StrLen("</Events>"), "")
+
+; Feedback grafico
+Gui, +AlwaysOnTop -MinimizeBox -MaximizeBox
+Gui, Margin, 20,20
+Gui, Font, w400 s11, Verdana
+Gui, Add, Text, +Center, Elaborazione eventi
+Gui, Add, Progress, w300 h20 -0x00000001 vElabProgress
+Gui, Add, Text, +Center, Creazione file Excel
+Gui, Add, Progress, w300 h20 -0x00000001 vExcelProgress
+Gui, Show, xCenter yCenter
 
 ; Lettura degli eventi
 While _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
@@ -216,9 +217,8 @@ While _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 		DeadlockCount := DeadlockCount + 1
 	}
 	EventCount := EventCount + 1
+	GuiControl,,ElabProgress,%EventCount%
 }
-
-;MsgBox, Lettura del file completata `n - Lock : %LockCount% `n - Deadlock : %DeadlockCount%
 
 If FileExist(TEMP_FILE)
 	FileDelete, %TEMP_FILE%
@@ -250,7 +250,11 @@ for i, row in AllResult
 
 
 ; Export dati in excel
-ExportInExcel(Result)
+Intest := ["TIPO", "START TIME", "DATA", "TIME", "DURATION", "LOGIN1", "QUERY1", "LOGIN2", "QUERY2", "ID"]
+ExportInExcel(Result, Intest)
+
+Gui, Destroy
+MsgBox, Elaborazione completata `n`n- Lock : %LockCount% `n- Deadlock : %DeadlockCount%
 
 ExitApp
 

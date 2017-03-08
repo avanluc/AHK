@@ -1,0 +1,20 @@
+Changelog - Analisi_locks.ahk
+------------------------------
+v1.02
+
+- Unificate le due progress bar in un'unica gui
+- Rimosso l'utilizzo di notepad++ per la modifica alla formattazione del file xml
+
+------------------------------
+v1.01
+
+- Spostamento dell'esportazione in Excel all'interno di una funzione
+- Aggiunto il calcolo del tempo totale per ogni lock
+- Aggiunte due progress bar per dare il feedback visivo dell'avanzamento dell'elaborazione
+
+------------------------------
+v1.0
+
+- Lettura del file trace esportato in xml 
+- Estrazione delle informazioni riguardanti i lock
+- Esportazione delle informazioni in un Foglio Excel
