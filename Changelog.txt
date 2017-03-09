@@ -1,5 +1,11 @@
 Changelog - Analisi_locks.ahk
 ------------------------------
+v1.04
+
+- Evidenziati in rosso le query da controllare (non contenenti Update o Insert)
+- Aggiunte due progress bar per vedere lo stato dell'ordinamento e del calcolo della durata
+
+------------------------------
 v1.02
 
 - Unificate le due progress bar in un'unica gui

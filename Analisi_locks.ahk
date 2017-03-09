@@ -1,7 +1,7 @@
 ﻿/*
 * Analisi_locks.ahk
 * Avanzini Luca - 07/03/2017
-* v1.02
+* v1.04
 */
 
 #NoEnv
@@ -113,8 +113,11 @@ ExportInExcel(Data, Intestazioni){
 
 	; Valorizza le celle
 	for i, row in Data{
-		for j, col in row
+		for j, col in row{
 			oExcel.ActiveCell.Offset( i-1,j-1).Value := col
+			if (j=7 or j=9)  and (Not(InStr(col, "update") or InStr(col, "insert")))
+				oExcel.ActiveCell.Offset( i-1,j-1).Font.Color := -16776961
+		}
 		_tmp := (i * 100)/Data.Length()
 		GuiControl,,ExcelProgress,%_tmp%
 	}
@@ -122,11 +125,6 @@ ExportInExcel(Data, Intestazioni){
 	; Rimuovi la colonna con lo StartTime
 	oExcel.Columns(10).EntireColumn.Delete
 	oExcel.Columns(2).EntireColumn.Delete
-
-	; oExcel.Range("A3").Formula := "=SOMMA(A1:A2)" ; set formula for cell A3 to SUM(A1:A2)
-	; oExcel.Range("A3").Borders(8).LineStyle := 1 ; set top border line style for cell A3 (xlEdgeTop = 8, xlContinuous = 1)
-	; oExcel.Range("A3").Borders(8).Weight := 2 ; set top border weight for cell A3 (xlThin = 2)
-	; oExcel.Range("A3").Font.Bold := 1 ; set bold font for cell A3
 	
 	; Abilita l'autofit
 	oExcel.Range("A1:H" Data.Length()).Select
@@ -159,6 +157,10 @@ Gui, Margin, 20,20
 Gui, Font, w400 s11, Verdana
 Gui, Add, Text, +Center, Elaborazione eventi
 Gui, Add, Progress, w300 h20 -0x00000001 vElabProgress
+Gui, Add, Text, +Center, Ordinamento eventi
+Gui, Add, Progress, w300 h20 -0x00000001 vSortProgress
+Gui, Add, Text, +Center, Calcolo durata eventi
+Gui, Add, Progress, w300 h20 -0x00000001 vCalcProgress
 Gui, Add, Text, +Center, Creazione file Excel
 Gui, Add, Progress, w300 h20 -0x00000001 vExcelProgress
 Gui, Show, xCenter yCenter
@@ -184,21 +186,22 @@ While _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 		_query2   := StrX(_blocking, QUERY_BEGIN_STR, 1, StrLen(QUERY_BEGIN_STR), QUERY_END_STR, 1, StrLen(QUERY_END_STR), "")
 				
 		_duration := StrX(_event, DURATION_BEGIN_STR, 1, StrLen(DURATION_BEGIN_STR), COLUMN_END_STR, 1, StrLen(COLUMN_END_STR), "")
-		_startTime := StrX(_event, START_BEGIN_STR, 1, StrLen(START_BEGIN_STR), COLUMN_END_STR, 1, StrLen(COLUMN_END_STR), "")
-
+		_startTime:= StrX(_event, START_BEGIN_STR, 1, StrLen(START_BEGIN_STR), COLUMN_END_STR, 1, StrLen(COLUMN_END_STR), "")
 
 		; Elaborazione dati
 		If (_login1 = "")
 			_login1 := SubStr(_client1, 67, StrLen(SubStr(_client1, 67))-10)
 		If (_login2 = "")
 			_login2 := SubStr(_client2, 67, StrLen(SubStr(_client2, 67))-10)
-		_login1 := StrReplace(_login1, "PEDROLLOSPA\", "")
-		_login2 := StrReplace(_login2, "PEDROLLOSPA\", "")
+		_login1   := StrReplace(_login1, "PEDROLLOSPA\", "")
+		_login2   := StrReplace(_login2, "PEDROLLOSPA\", "")
 		_duration := Floor(intParse(_duration)/1000000)
-		_date := SubStr(_startTime,1,10)
-		_time := SubStr(SubStr(_startTime, 1, StrLen(_startTime)-6),12)
-		_startTime := SubStr(_startTime,1,10) " " SubStr(SubStr(_startTime, 1, StrLen(_startTime)-6),12)
-		_id := _processId _ownerId _desc
+		_date     := SubStr(_startTime,1,10)
+		_time     := SubStr(SubStr(_startTime, 1, StrLen(_startTime)-6),12)
+		_startTime:= SubStr(_startTime,1,10) " " SubStr(SubStr(_startTime, 1, StrLen(_startTime)-6),12)
+		_id 	  := _processId _ownerId _desc
+		_query1 := StrReplace(StrReplace(_query1, "&amp;gt;", ">"), "&amp;lt;", "<")
+		_query2 := StrReplace(StrReplace(_query2, "&amp;gt;", ">"), "&amp;lt;", "<")
 		
 		; Scrittura dati
 		AllResult.Push(["lock", _startTime, _date, _time, _duration, _login1, _query1, _login2, _query2, _id])
@@ -223,19 +226,18 @@ If FileExist(TEMP_FILE)
 	FileDelete, %TEMP_FILE%
 
 ; Ordina gli array in base allo start time
+GuiControl,,SortProgress,0
 SortArray2DByElement(Result, 2)
+GuiControl,,SortProgress,50
 SortArray2DByElement(AllResult, 2)
+GuiControl,,SortProgress,100
 
 max := 0
 prevId := AllResult[1][10]
-for i, row in AllResult
-{
-	if( row[10] != prevId )
-	{
-		for _i, _row in Result
-		{
-			if( _row[10] = prevId )
-			{
+for i, row in AllResult{
+	if( row[10] != prevId ){
+		for _i, _row in Result{
+			if( _row[10] = prevId ){
 				_row[5] := max
 				break
 			}		
@@ -245,6 +247,8 @@ for i, row in AllResult
 	}
 	if(row[5] > max)
 		max := row[5]
+	_tmp := (i * 100)/AllResult.Length()
+	GuiControl,,CalcProgress,%_tmp%
 }
 
 
