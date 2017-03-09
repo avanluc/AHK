@@ -3,26 +3,40 @@
 #HotkeyInterval 99000000
 #KeyHistory 0
 ListLines Off
-;Process, Priority, , A
-;SetBatchLines, -1
 SetKeyDelay, -1, -1
 SetMouseDelay, -1
 SetDefaultMouseSpeed, 0
 SetWinDelay, -1
 SetControlDelay, -1
 SendMode Input
-
-;SetWorkingDir %A_ScriptDir%
 SetWorkingDir %A_Temp%
 
 ;Global variables
 RIL_DIR_SV := "D:\Rilasci\Sviluppo"
 RIL_DIR_US := "D:\Rilasci\Utente"
 RIL_BACKUP := "D:\Temp\Backup ultimo rilascio"
+CURR_DEV   := 1
 
-;#Include %A_ScriptDir%\scroll.ahk
+
+#include %A_ScriptDir%\lib\VA.ahk
 
 
+VA_SetDefaultEndpoint("playback:" CURR_DEV, 0)
+VA_SetDefaultEndpoint("playback:" CURR_DEV, 1)
+
+
+
+IfNotExist, R:\
+	run, \\srvdc1\NETLOGON\mappature_sviluppo.vbe
+
+	
+;-----------------------------------------------------------------------------
+; Switch del canale audio
+#h::
+	CURR_DEV := Mod(CURR_DEV,2) + 1
+	VA_SetDefaultEndpoint("playback:" CURR_DEV, 0)
+	VA_SetDefaultEndpoint("playback:" CURR_DEV, 1)
+	return
 
 
 ;-----------------------------------------------------------------------------
