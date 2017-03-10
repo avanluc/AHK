@@ -1,5 +1,13 @@
 Changelog - Analisi_locks.ahk
 ------------------------------
+v1.05
+
+- Ridotte le progress bar ad una sola che si aggiorna in base all'operazione in corso
+- Aggiunta gestione dei worksheet nel foglio Excel
+- Aggiunto controllo sulla lunghezza dell'array da esportare per evitare di riferirsi a celle inesistenti
+- Aggiunta analisi iniziale deadlock (riconosce solo data e ora)
+
+------------------------------
 v1.04
 
 - Evidenziati in rosso le query da controllare (non contenenti Update o Insert)
