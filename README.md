@@ -8,7 +8,7 @@
  + Dare un riscontro grafico durante la compilazione
  + Gestire la modifica del file senza passare da notepad
  + Export dei deadlock in un secondo foglio del documento
- - Gestire deadlock
+ + Gestire deadlock
  
  
    Scartati								| Causa

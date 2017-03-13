@@ -1,5 +1,14 @@
 Changelog - Analisi_locks.ahk
 ------------------------------
+v1.1
+
+- Introdotta gestione dei deadlock
+- Rilevazione della presenza di Exchange Events e segnalazione tramite contatore di occorrenze
+- Parametrizzato riferimento alle colonne in Excel
+- Migliorata la gestione delle intestazioni
+- Isolamento in una funzione del calcolo della durata dei lock
+
+------------------------------
 v1.05
 
 - Ridotte le progress bar ad una sola che si aggiorna in base all'operazione in corso

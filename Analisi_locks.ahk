@@ -1,7 +1,7 @@
 ﻿/*
 * Analisi_locks.ahk
 * Avanzini Luca - 07/03/2017
-* v1.05
+* v1.1
 */
 
 #NoEnv
@@ -117,8 +117,8 @@ ExportInExcel(Data, Intestazioni, ByRef oExcel=0){
 	oExcel.Range("A1").Select
 	for i, desc in Intestazioni
 		oExcel.ActiveCell.Offset(0,i-1).Value := desc
-	oExcel.Range("A1:I1").Interior.ColorIndex := 1
-	oExcel.Range("A1:I1").Font.ColorIndex := 2
+	oExcel.Range("A1").EntireRow.Interior.ColorIndex := 1
+	oExcel.Range("A1").EntireRow.Font.ColorIndex := 2
 	oExcel.Range("A2").Select
 
 	; Valorizza le celle
@@ -133,12 +133,14 @@ ExportInExcel(Data, Intestazioni, ByRef oExcel=0){
 	}
 
 	; Rimuovi la colonna con lo StartTime
-	oExcel.Columns(10).EntireColumn.Delete
+	if(Data[1][1] = "lock")
+		oExcel.Columns(10).EntireColumn.Delete
 	oExcel.Columns(2).EntireColumn.Delete
 	
 	; Abilita l'autofit
-	oExcel.Range("A1:H" Data.Length()).Select
-	oExcel.Selection.Columns.AutoFit
+	;oExcel.Range("A1").EntireRow.Select
+	;oExcel.Selection.Columns.AutoFit
+	oExcel.Columns.AutoFit
 	oExcel.ActiveSheet.Name := "Analisi " Data[1][1]
 	oExcel.Range("A2").Select
 	
@@ -151,15 +153,39 @@ ExportInExcel(Data, Intestazioni, ByRef oExcel=0){
 */
 RepeatedProcess(Array, query){
 	for i, row in Array
-		if (Array[4] = query)
+		if (row[4] = query)
 			return true
 	return false
 }
 
 
 /*
-* Lettura ed elaborazione dati di un lock
+* Evaluate each lock maximum duration
 */
+EvaluateDuration(ByRef AllData, ByRef Data){
+	max := 0
+	prevId := AllData[1][10]
+	for i, row in AllData{
+		if( row[10] != prevId ){
+			for _i, _row in Data{
+				if( _row[10] = prevId ){
+					_row[5] := max
+					break
+				}		
+			}
+			max := 0
+			prevId := row[10]
+		}
+		if(row[5] > max)
+			max := row[5]
+		GuiControl,,ProgressText, % "Calcolo durata eventi  ( " i " / " AllData.Length() " )"
+		GuiControl,,ProgressStatus,% (i * 100)/AllData.Length()
+	}
+}
+
+/*
+* Lettura ed elaborazione dati di un lock (DA CONTROLLARE)
+
 AnalyzeLock(Event, Report, ByRef Result, ByRef AllResult, ByRef Counter ){
 	
 	; Lettura dati
@@ -200,7 +226,12 @@ AnalyzeLock(Event, Report, ByRef Result, ByRef AllResult, ByRef Counter ){
 		Result.Push(["lock", startTime, date, time, duration, login1, query1, login2, query2, id])
 	}
 }
+*/
 
+
+/*
+* Inizio Esecuzione
+*/
 ; Selezione del file di input
 FileSelectFile, inputFilePath, 3, %TEMP_DIR%,Selezionare il trace file, *.xml
 if (inputFilePath = "")
@@ -251,7 +282,7 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 				
 		_duration := StrX(_event, DURATION_BEGIN_STR, 1, StrLen(DURATION_BEGIN_STR), COLUMN_END_STR, 1, StrLen(COLUMN_END_STR), "")
 		_startTime:= StrX(_event, START_BEGIN_STR, 1, StrLen(START_BEGIN_STR), COLUMN_END_STR, 1, StrLen(COLUMN_END_STR), "")
-
+		
 		; Elaborazione dati
 		if (_login1 = "")
 			_login1 := SubStr(_client1, 67, StrLen(SubStr(_client1, 67))-10)
@@ -267,8 +298,7 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 		
 		; Scrittura dati
 		AllResult.Push(["lock", _startTime, _date, _time, _duration, _login1, _query1, _login2, _query2, _id])
-		if(_duration < 10)
-		{
+		if(_duration < 10){
 			LockCount := LockCount + 1	
 			Result.Push(["lock", _startTime, _date, _time, _duration, _login1, _query1, _login2, _query2, _id])
 		}
@@ -280,12 +310,11 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 	{
 		_TempProcess := []
 		_victim  := StrX(_report, "<deadlock victim=""", 1, StrLen("<deadlock victim="""), """", 1, StrLen(""""), "")
-		_ExcEvt := false
-		_N := 0
+		_ExcEvt := 0
+		_N := 1
 		
 		; Ciclo sui processi coinvolti nel deadlock
-		
-		while _process := StrX(_report, "<process  id", _N, 0, "</process>", 1, 0, _N)
+		while _process := StrX(_report, "<process id", _N, 0, "</process>", 1, 0, _N)
 		{
 			; Lettura dati
 			_processId:= StrX(_process, ID_BEGIN_STR, 1, StrLen(ID_BEGIN_STR), ID_END_STR, 1, StrLen(ID_END_STR), "")
@@ -304,25 +333,24 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 			if( Not(RepeatedProcess(_TempProcess, _query)) )
 				_TempProcess.Push([_processId, _id, _login, _query])
 			else 
-				_ExcEvt := true
-			__A := SubStr(_report,_N)
+				_ExcEvt := _ExcEvt + 1 
 		}
-		
+		; Lettura dati
 		_startTime:= StrX(_event, START_BEGIN_STR, 1, StrLen(START_BEGIN_STR), COLUMN_END_STR, 1, StrLen(COLUMN_END_STR), "")
 		
+		; Elaborazione dati
 		_date     := SubStr(_startTime,1,10)
 		_time     := SubStr(SubStr(_startTime, 1, StrLen(_startTime)-6),12)
 		_startTime:= SubStr(_startTime,1,10) " " SubStr(SubStr(_startTime, 1, StrLen(_startTime)-6),12)
 		_id 	  := _processId _ownerId _desc
-
-		_Appo := ["deadlock", _startTime, _date, _time]
+		
+		; Scrittura dati
+		_Appo := ["deadlock", _startTime, _date, _time, _ExcEvt]
 		for i, row in _TempProcess {
 			_Appo.Push(row[3])
 			_Appo.Push(row[4])
 		}
-		_Appo.Push(_ExcEvt)
 		ResultDead.Push(_Appo)
-		
 		DeadlockCount := DeadlockCount + 1
 	}
 	
@@ -334,34 +362,16 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 if FileExist(TEMP_FILE)
 	FileDelete, %TEMP_FILE%
 
-; Ordina gli array in base allo start time
+; Ordina gli array in base allo start time e calcola la durata dei lock
 SortArray2DByElement(Result, 2)
 SortArray2DByElement(AllResult, 2)
-
-max := 0
-prevId := AllResult[1][10]
-for i, row in AllResult{
-	if( row[10] != prevId ){
-		for _i, _row in Result{
-			if( _row[10] = prevId ){
-				_row[5] := max
-				break
-			}		
-		}
-		max := 0
-		prevId := row[10]
-	}
-	if(row[5] > max)
-		max := row[5]
-	GuiControl,,ProgressText, % "Calcolo durata eventi  ( " i " / " AllResult.Length() " )"
-	GuiControl,,ProgressStatus,% (i * 100)/AllResult.Length()
-}
-
+SortArray2DByElement(ResultDead, 2)
+EvaluateDuration(AllResult, Result)
 
 ; Export dati in excel
 Intest := ["TIPO", "START TIME", "DATA", "TIME", "DURATION", "LOGIN1", "QUERY1", "LOGIN2", "QUERY2", "ID"]
 oExcel := ExportInExcel(Result, Intest)
-Intest := ["TIPO", "START TIME", "DATA", "TIME", "LOGIN1", "QUERY1", "LOGIN2", "QUERY2", "ID"]
+Intest := ["TIPO", "START TIME", "DATA", "TIME", "EXCHANGE EVENT", "LOGIN1", "QUERY1", "LOGIN2", "QUERY2", "LOGIN3", "QUERY3"]
 oExcel := ExportInExcel(ResultDead, Intest, oExcel)
 oExcel.Visible := 1
 
