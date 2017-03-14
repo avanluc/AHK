@@ -7,6 +7,8 @@ v1.1
 - Parametrizzato riferimento alle colonne in Excel
 - Migliorata la gestione delle intestazioni
 - Isolamento in una funzione del calcolo della durata dei lock
+- Introdotto LTrim sulle query
+- Introdotta larghezza massima sulle colonne del foglio excel
 
 ------------------------------
 v1.05

@@ -1,7 +1,7 @@
 ﻿/*
 * Analisi_locks.ahk
 * Avanzini Luca - 07/03/2017
-* v1.1
+* v1.11
 */
 
 #NoEnv
@@ -137,10 +137,13 @@ ExportInExcel(Data, Intestazioni, ByRef oExcel=0){
 		oExcel.Columns(10).EntireColumn.Delete
 	oExcel.Columns(2).EntireColumn.Delete
 	
-	; Abilita l'autofit
-	;oExcel.Range("A1").EntireRow.Select
-	;oExcel.Selection.Columns.AutoFit
+	; Abilita l'autofit e setta MAX WIDTH
+	MAX_WIDTH := 70
 	oExcel.Columns.AutoFit
+	for i in Data[1]
+		if(oExcel.Columns(i).ColumnWidth > MAX_WIDTH)
+			oExcel.Columns(i).ColumnWidth := MAX_WIDTH
+		
 	oExcel.ActiveSheet.Name := "Analisi " Data[1][1]
 	oExcel.Range("A2").Select
 	
@@ -182,51 +185,6 @@ EvaluateDuration(ByRef AllData, ByRef Data){
 		GuiControl,,ProgressStatus,% (i * 100)/AllData.Length()
 	}
 }
-
-/*
-* Lettura ed elaborazione dati di un lock (DA CONTROLLARE)
-
-AnalyzeLock(Event, Report, ByRef Result, ByRef AllResult, ByRef Counter ){
-	
-	; Lettura dati
-	blocked  := StrX(Report, PROC_BEGIN_STR, 1, 0, PROC_END_STR, 1, 0, "")
-	client1  := StrX(blocked, "clientapp=""", 1, StrLen("clientapp="""), """", 1, StrLen(""""), "")
-	login1   := StrX(blocked, LOGIN_BEGIN_STR, 1, StrLen(LOGIN_BEGIN_STR), LOGIN_END_STR, 1, StrLen(LOGIN_END_STR), "")
-	query1   := StrX(blocked, QUERY_BEGIN_STR, 1, StrLen(QUERY_BEGIN_STR), QUERY_END_STR, 1, StrLen(QUERY_END_STR), "")
-	processId:= StrX(blocked, ID_BEGIN_STR, 1, StrLen(ID_BEGIN_STR), ID_END_STR, 1, StrLen(ID_END_STR), "")
-	ownerId  := StrX(blocked, "ownerId=""", 1, StrLen("ownerId="""), """", 1, StrLen(""""), "")
-	desc     := StrX(blocked, "XDES=""", 1, StrLen("XDES="""), """", 1, StrLen(""""), "")
-	
-	blocking := StrX(Report, PROC2_BEGIN_STR, 1, 0, PROC2_END_STR, 1, 0, "")
-	client2  := StrX(blocking, "clientapp=""", 1, StrLen("clientapp="""), """", 1, StrLen(""""), "")
-	login2   := StrX(blocking, LOGIN_BEGIN_STR, 1, StrLen(LOGIN_BEGIN_STR), LOGIN_END_STR, 1, StrLen(LOGIN_END_STR), "")
-	query2   := StrX(blocking, QUERY_BEGIN_STR, 1, StrLen(QUERY_BEGIN_STR), QUERY_END_STR, 1, StrLen(QUERY_END_STR), "")
-			
-	duration := StrX(Event, DURATION_BEGIN_STR, 1, StrLen(DURATION_BEGIN_STR), COLUMN_END_STR, 1, StrLen(COLUMN_END_STR), "")
-	startTime:= StrX(Event, START_BEGIN_STR, 1, StrLen(START_BEGIN_STR), COLUMN_END_STR, 1, StrLen(COLUMN_END_STR), "")
-
-	; Elaborazione dati
-	if (login1 = "")
-		login1 := SubStr(client1, 67, StrLen(SubStr(client1, 67))-10)
-	if (login2 = "")
-		login2 := SubStr(client2, 67, StrLen(SubStr(client2, 67))-10)
-	login1   := StrReplace(login1, "PEDROLLOSPA\", "")
-	login2   := StrReplace(login2, "PEDROLLOSPA\", "")
-	duration := Floor(intParse(duration)/1000000)
-	date     := SubStr(startTime,1,10)
-	time     := SubStr(SubStr(startTime, 1, StrLen(startTime)-6),12)
-	startTime:= SubStr(startTime,1,10) " " SubStr(SubStr(startTime, 1, StrLen(startTime)-6),12)
-	id 	     := processId ownerId desc
-	
-	; Scrittura dati
-	AllResult.Push(["lock", startTime, date, time, duration, login1, query1, login2, query2, id])
-	if(duration < 10)
-	{
-		Counter := Counter + 1	
-		Result.Push(["lock", startTime, date, time, duration, login1, query1, login2, query2, id])
-	}
-}
-*/
 
 
 /*
@@ -295,6 +253,8 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 		_time     := SubStr(SubStr(_startTime, 1, StrLen(_startTime)-6),12)
 		_startTime:= SubStr(_startTime,1,10) " " SubStr(SubStr(_startTime, 1, StrLen(_startTime)-6),12)
 		_id 	  := _processId _ownerId _desc
+		_query1   := RegExReplace(RegExReplace(_query1, "^`r`n[\t]+", ""), "`n", "")
+		_query2   := RegExReplace(RegExReplace(_query2, "^`r`n[\t]+", ""), "`n", "")
 		
 		; Scrittura dati
 		AllResult.Push(["lock", _startTime, _date, _time, _duration, _login1, _query1, _login2, _query2, _id])
@@ -302,8 +262,6 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 			LockCount := LockCount + 1	
 			Result.Push(["lock", _startTime, _date, _time, _duration, _login1, _query1, _login2, _query2, _id])
 		}
-		
-		;AnalyzeLock(_event, _report, Result, AllResult, LockCount)
 	}
 	; GESTIONE DEADLOCK
 	else if ((_report := StrX(_event, DEADLOCK_BEGIN_STR, 1, 0, DEADLOCK_END_STR, 1, 0, "")) != "")
@@ -328,6 +286,7 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 			if (_login = "")
 				_login := SubStr(_client, 67, StrLen(SubStr(_client, 67))-10)
 			_login := StrReplace(_login, "PEDROLLOSPA\", "")
+			_query := RegExReplace(RegExReplace(_query, "^`r`n[\t]+", ""), "`n", "")
 			_id    := _processId _ownerId _desc
 			
 			if( Not(RepeatedProcess(_TempProcess, _query)) )
@@ -336,7 +295,40 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 				_ExcEvt := _ExcEvt + 1 
 		}
 		; Lettura dati
-		_startTime:= StrX(_event, START_BEGIN_STR, 1, StrLen(START_BEGIN_STR), COLUMN_END_STR, 1, StrLen(COLUMN_END_STR), "")
+		_startTime := StrX(_event, START_BEGIN_STR, 1, StrLen(START_BEGIN_STR), COLUMN_END_STR, 1, StrLen(COLUMN_END_STR), "")
+		
+		/*
+		* Analisi delle risorse coinvolte nel deadlock
+		while _pagelock := StrX(_report, "<pagelock", __N, 0, "</pagelock>", 1, 0, __N)
+		{
+			_Owners := []
+			_Waiters := []
+			_ownerList  := StrX(_pagelock, "<owner-list>", 1, StrLen("<owner-list>"), "</owner-list>", 1, StrLen("</owner-list>"), "")
+			_waiterList := StrX(_pagelock, "<waiter-list>", 1, StrLen("<waiter-list>"), "</waiter-list>", 1, StrLen("</waiter-list>"), "")
+			
+			while _owner := StrX(_ownerList, "<owner", K1, 0, ">", 1, 0, K1)
+			{
+				_ownerId   := StrX(_owner, "<owner id=""", 1, StrLen("<owner id="""), """", 1, StrLen(""""), "")
+				_ownerMode := StrX(_owner, "mode=""", 1, StrLen("mode="""), """", 1, StrLen(""""), "")
+				for i, row in _TempProcess
+					if(_ownerId = row[1]){
+						_Owners.push([i, _ownerMode, row[4]])
+						break
+					}
+			}
+			
+			while _waiter := StrX(_waiterList, "<waiter", K2, 0, ">", 1, 0, K2)
+			{
+				_waiterId   := StrX(_waiter, "<waiter id=""", 1, StrLen("<waiter id="""), """", 1, StrLen(""""), "")
+				_waiterMode := StrX(_waiter, "mode=""", 1, StrLen("mode="""), """", 1, StrLen(""""), "")
+				for i, row in _TempProcess
+					if(_waiterId = row[1]){
+						_Waiters.push([i, _ownerMode, row[4]])
+						break
+					}
+			}
+		}
+		*/
 		
 		; Elaborazione dati
 		_date     := SubStr(_startTime,1,10)
