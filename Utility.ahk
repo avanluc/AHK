@@ -58,7 +58,7 @@ IfNotExist, R:\
 				Cliente := SubStr(A_LoopFileName, 1, delPos)
 				IfNotExist, %RIL_BACKUP%\%Cliente%\
 					FileCreateDir, %RIL_BACKUP%\%Cliente%\
-				FileMove, %RIL_DIR_US%\%A_LoopFileName%, %RIL_BACKUP%\%Cliente%\%A_LoopFileName%
+				FileMove, %RIL_DIR_US%\%A_LoopFileName%, %RIL_BACKUP%\%Cliente%\%A_LoopFileName%, 1
 				Elenco.Insert(A_LoopFileName)
 				Sleep, 200
 			}
@@ -75,7 +75,7 @@ IfNotExist, R:\
 					NomeFile := SubStr(A_LoopFileName, 1, delPos) ".zip"
 					Elenco.Insert(NomeFile)
 				}
-				FileMove, %RIL_DIR_US%\%A_LoopFileName%, %RIL_BACKUP%\%Cliente%\%NomeFile%
+				FileMove, %RIL_DIR_US%\%A_LoopFileName%, %RIL_BACKUP%\%Cliente%\%NomeFile%, 1
 				Sleep, 200
 			}
 		}
@@ -173,98 +173,9 @@ WorkPath:
 	clipboard = D:\Ambienti\Work\%var%\
 	Return
 
-;-----------------------------------------------------------------------------
-; Parametri JVM SitePainter
-/*
-^+j::
-	Gui, Destroy
-	Gui, +AlwaysOnTop -MinimizeBox -MaximizeBox
-	Gui, Margin, 20,20
-	Gui, Font, w600 s11, Arial
-	Gui, Add, Text,, Parametri JVM SitePainter:
-	Gui, Font, w400 s10, Arial
-	Gui, Add, Button, w150 x50 gJVMRunPar, JVM Run Params
-	Gui, Add, Button, w150 x50 gJVMDebugPar, JVM Debug Params
-	GuiControl,, JVMRunPar
-	GuiControl,, JVMDebugPar
-	Gui, Show, W250 H150 xCenter yCenter
-	Return
-JVMRunPar:
-	clipboard = -Xdebug -Xms256m -Xmx1024m -XX:MaxPermSize=512m -Dfile.encoding=UTF-8
-	Return
-JVMDebugPar:
-	clipboard = -Xlint:-unchecked -source 1.5 -target 1.5
-	Return
-*/
-
-;-----------------------------------------------------------------------------
-; Menu di lancio per SQL Management Studio
-/*
-^+!s::
-	Gui, 2:Destroy
-	Gui, 2:+AlwaysOnTop -MinimizeBox -MaximizeBox
-	Gui, 2:Margin, 20,20
-	Gui, 2:Font, s11, Arial
-	Gui, 2:Add, Text,, SQL Server Management Studio:
-	Gui, 2:Font, s10, Arial
-	Gui, 2:Add, Button, xm+70 gButtonAction, SQL 2008
-	Gui, 2:Add, Button, gButtonAction, SQL 2012
-	Gui, 2:Add, Button, gButtonAction, SQL 2014
-	GuiControl,, ButtonAction
-	Gui 2:Show
-	Return
-ButtonAction:
-	GuiControlGet, var,, % A_GuiControl
-	if(var == "SQL 2008")
-		run, C:\Program Files (x86)\Microsoft SQL Server\100\Tools\Binn\VSShell\Common7\IDE\Ssms.exe
-	if(var == "SQL 2012")
-		run, C:\Program Files (x86)\Microsoft SQL Server\110\Tools\Binn\ManagementStudio\Ssms.exe
-	if(var == "SQL 2014")
-		run, C:\Program Files (x86)\Microsoft SQL Server\120\Tools\Binn\ManagementStudio\Ssms.exe
-	Gui, 2:Destroy
-	Return
-*/
-/*
-^+!s::
-	Width := 250
-	Gui, Destroy
-	Gui, +AlwaysOnTop
-	;WinSet, Transparent, 250
-	Gui, Color, 808080
-	Gui, Margin, 0, 0
-	Gui, Font, s11 cDCDCDC Bold
-	Gui, Add, Progress, % "x-1 y-1 w" (Width+2) " h31 Background404040 Disabled hwndHPROG"
-	Control, ExStyle, -0x20000, , ahk_id %HPROG% ; propably only needed on Win XP
-	Gui, Add, Text, % "x0 y0 w" Width " h30 BackgroundTrans Center 0x200 gGuiMove vCaption", SQL Server Management Studio:
-	Gui, Font, s10
-	Gui, Add, Text, % "x95 y+10 w" (Width-14) "r1 +0x4000 vTX1 gLaunchSQL", SQL 2008
-	Gui, Add, Text, % "x95 y+10 w" (Width-14) "r1 +0x4000 vTX2 gLaunchSQL", SQL 2012
-	Gui, Add, Text, % "x95 y+10 w" (Width-14) "r1 +0x4000 vTX3 gLaunchSQL", SQL 2014
-	;Gui, Add, Text, % "x105 y+10 w" (Width-14) "r1 +0x4000 vTX4 gClose", Close
-	Gui, Add, Text, % "x95 y+10 w" (Width-14) "h5 vP"
-	GuiControlGet, P, Pos
-	H := PY + PH
-	Gui, -Caption
-	WinSet, Region, 0-0 w%Width% h%H% r6-6
-	Gui, Show, % "w" Width " NA"
-	WinSet AlwaysOnTop
-	GuiControl, Focus, SQL 2012
-	return
-*/
 GuiMove:
    PostMessage, 0xA1, 2
 	return
-
-LaunchSQL:
-	GuiControlGet, var,, % A_GuiControl
-	if(var == "SQL 2008")
-		run, C:\Program Files (x86)\Microsoft SQL Server\100\Tools\Binn\VSShell\Common7\IDE\Ssms.exe
-	if(var == "SQL 2012")
-		run, C:\Program Files (x86)\Microsoft SQL Server\110\Tools\Binn\ManagementStudio\Ssms.exe
-	if(var == "SQL 2014")
-		run, C:\Program Files (x86)\Microsoft SQL Server\120\Tools\Binn\ManagementStudio\Ssms.exe
-	Gui, Destroy
-	Return
 
 Close:
 	Gui, Destroy

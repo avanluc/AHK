@@ -350,6 +350,7 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 	GuiControl,,ProgressText, % "Elaborazione eventi  ( " EventCount " / " EventTot " )"
 	GuiControl,,ProgressStatus,% (EventCount*100)/EventTot
 }
+AllResult.Push(["lock", _startTime, _date, _time, _duration, _login1, _query1, _login2, _query2, ""])
 
 if FileExist(TEMP_FILE)
 	FileDelete, %TEMP_FILE%
