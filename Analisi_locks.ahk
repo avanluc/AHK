@@ -1,11 +1,12 @@
 ﻿/*
-* Analisi_locks.ahk
-* Avanzini Luca - 07/03/2017
-* v1.11
+* AutoHotkey Version: AutoHotkey 1.1
+* Author: 			  Avanzini Luca
+* Description:		  Extract information about locks and deadlocks from a SQL trace file
+* Last Modification:  15/03/2017
+* Version:  		  v1.11
 */
 
 #NoEnv
-;#Warn
 SendMode Input 
 SetWorkingDir %A_ScriptDir% 
 
@@ -53,7 +54,7 @@ SetWorkingDir %A_ScriptDir%
 		 ResultDead := []
 
 
-		  
+
 /*
 * Auto-Parser for XML / HTML | By Skan | v1.0-196c 21-Nov-2009 www.autohotkey.com/forum/topic51354.html
 */			 
@@ -125,7 +126,7 @@ ExportInExcel(Data, Intestazioni, ByRef oExcel=0){
 	for i, row in Data{
 		for j, col in row{
 			oExcel.ActiveCell.Offset( i-1,j-1).Value := col
-			if (j=7 or j=9) and (Not(InStr(col, "update") or InStr(col, "insert")))
+			if (j=7 or j=9) and (Not(InStr(col, "update") or InStr(col, "insert") or InStr(col, "alter")))
 				oExcel.ActiveCell.Offset( i-1,j-1).Font.Color := -16776961
 		}
 		GuiControl,,ProgressText, % "Compilazione righe Excel  ( " i " / " Data.Length() " )"
@@ -223,7 +224,6 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 	; GESTIONE LOCK
 	if ((_report := StrX(_event, LOCK_BEGIN_STR, 1, 0, LOCK_END_STR, 1, 0, "")) != "")
 	{
-		
 		; Lettura dati
 		_blocked  := StrX(_report, PROC_BEGIN_STR, 1, 0, PROC_END_STR, 1, 0, "")
 		_client1  := StrX(_blocked, "clientapp=""", 1, StrLen("clientapp="""), """", 1, StrLen(""""), "")
@@ -246,8 +246,8 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 			_login1 := SubStr(_client1, 67, StrLen(SubStr(_client1, 67))-10)
 		if (_login2 = "")
 			_login2 := SubStr(_client2, 67, StrLen(SubStr(_client2, 67))-10)
-		_login1   := StrReplace(_login1, "PEDROLLOSPA\", "")
-		_login2   := StrReplace(_login2, "PEDROLLOSPA\", "")
+		_login1   := StrReplace(_login1, "PEDROLLOSPA\", "") " "
+		_login2   := StrReplace(_login2, "PEDROLLOSPA\", "") " "
 		_duration := Floor(intParse(_duration)/1000000)
 		_date     := SubStr(_startTime,1,10)
 		_time     := SubStr(SubStr(_startTime, 1, StrLen(_startTime)-6),12)
@@ -260,7 +260,7 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 		AllResult.Push(["lock", _startTime, _date, _time, _duration, _login1, _query1, _login2, _query2, _id])
 		if(_duration < 10){
 			LockCount := LockCount + 1	
-			Result.Push(["lock", _startTime, _date, _time, _duration, _login1, _query1, _login2, _query2, _id])
+			Result.Push(["lock", _startTime, _date, _time, _duration, _login1, _query1, _login2, _query2, _id, " "])
 		}
 	}
 	; GESTIONE DEADLOCK
@@ -285,7 +285,7 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 			; Elaborazione dati
 			if (_login = "")
 				_login := SubStr(_client, 67, StrLen(SubStr(_client, 67))-10)
-			_login := StrReplace(_login, "PEDROLLOSPA\", "")
+			_login := StrReplace(_login, "PEDROLLOSPA\", "") " "
 			_query := RegExReplace(RegExReplace(_query, "^`r`n[\t]+", ""), "`n", "")
 			_id    := _processId _ownerId _desc
 			
@@ -342,6 +342,7 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 			_Appo.Push(row[3])
 			_Appo.Push(row[4])
 		}
+		_Appo.Push(" ")
 		ResultDead.Push(_Appo)
 		DeadlockCount := DeadlockCount + 1
 	}
@@ -362,9 +363,9 @@ SortArray2DByElement(ResultDead, 2)
 EvaluateDuration(AllResult, Result)
 
 ; Export dati in excel
-Intest := ["TIPO", "START TIME", "DATA", "TIME", "DURATION", "LOGIN1", "QUERY1", "LOGIN2", "QUERY2", "ID"]
+Intest := ["TIPO", "START TIME", "DATA", "TIME", "DURATA (s)", "LOGIN1", "QUERY1", "LOGIN2", "QUERY2", "ID"]
 oExcel := ExportInExcel(Result, Intest)
-Intest := ["TIPO", "START TIME", "DATA", "TIME", "EXCHANGE EVENT", "LOGIN1", "QUERY1", "LOGIN2", "QUERY2", "LOGIN3", "QUERY3"]
+Intest := ["TIPO", "START TIME", "DATA", "TIME", "EXCHANGE EVENT", "LOGIN1", "QUERY1 (vittima)", "LOGIN2", "QUERY2", "LOGIN3", "QUERY3"]
 oExcel := ExportInExcel(ResultDead, Intest, oExcel)
 oExcel.Visible := 1
 
