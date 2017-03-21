@@ -1,6 +1,12 @@
 Changelog - Analisi_locks.ahk
 ------------------------------
-v1.1
+v1.13
+
+- Aggiunto "delete" alla lista di query da non evidenziare
+- Modifiche alla GUI
+
+------------------------------
+v1.11
 
 - Introdotta gestione dei deadlock
 - Rilevazione della presenza di Exchange Events e segnalazione tramite contatore di occorrenze

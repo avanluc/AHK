@@ -25,11 +25,6 @@ VA_SetDefaultEndpoint("playback:" CURR_DEV, 0)
 VA_SetDefaultEndpoint("playback:" CURR_DEV, 1)
 
 
-
-IfNotExist, R:\
-	run, \\srvdc1\NETLOGON\mappature_sviluppo.vbe
-
-	
 ;-----------------------------------------------------------------------------
 ; Switch del canale audio
 #h::
@@ -283,7 +278,7 @@ LaunchCodePainter:
 	WinSet, Region, 0-0 w%Width% h%H% r6-6
 	Gui, Show, % "w" Width " NA"
 	WinSet AlwaysOnTop
-	GuiControl, Focus, CodePainter
+	GuiControl, Focus, SitePainter
 	return
 
 ValidateSitePainter:
@@ -293,21 +288,21 @@ ValidateSitePainter:
 	Return
 
 ValidateCodePainter:
-	Gui, Destroy
-	run, C:\Program Files\TightVNC\tvnviewer.exe
-	Sleep 100
-	Send, {Enter}
-	x := (A_ScreenWidth / 2)
-	y := (A_ScreenHeight / 2)
-	WinWaitActive, Vnc Authentication
-	Send, cesco{Enter}
-	WinActivate, , pc-muletto
-	WinWaitActive, ,pc-muletto
-	Sleep, 500
-	MouseClick, left, x, y
-	Send, _ValidaLUA.vbs{Enter}
-	Sleep, 3000
-	WinClose, ,pc-muletto
+	; Gui, Destroy
+	; run, C:\Program Files\TightVNC\tvnviewer.exe
+	; Sleep 100
+	; Send, {Enter}
+	; x := (A_ScreenWidth / 2)
+	; y := (A_ScreenHeight / 2)
+	; WinWaitActive, Vnc Authentication
+	; Send, cesco{Enter}
+	; WinActivate, , pc-muletto
+	; WinWaitActive, ,pc-muletto
+	; Sleep, 500
+	; MouseClick, left, x, y
+	; Send, _ValidaLUA.vbs{Enter}
+	; Sleep, 3000
+	; WinClose, ,pc-muletto
 	Return
 
 

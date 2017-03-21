@@ -2,8 +2,8 @@
 * AutoHotkey Version: AutoHotkey 1.1
 * Author: 			  Avanzini Luca
 * Description:		  Extract information about locks and deadlocks from a SQL trace file
-* Last Modification:  15/03/2017
-* Version:  		  v1.11
+* Last Modification:  21/03/2017
+* Version:  		  v1.13
 */
 
 #NoEnv
@@ -126,7 +126,7 @@ ExportInExcel(Data, Intestazioni, ByRef oExcel=0){
 	for i, row in Data{
 		for j, col in row{
 			oExcel.ActiveCell.Offset( i-1,j-1).Value := col
-			if (j=7 or j=9) and (Not(InStr(col, "update") or InStr(col, "insert") or InStr(col, "alter")))
+			if (j=7 or j=9) and (Not(InStr(col, "update") or InStr(col, "insert") or InStr(col, "delete") or InStr(col, "alter")))
 				oExcel.ActiveCell.Offset( i-1,j-1).Font.Color := -16776961
 		}
 		GuiControl,,ProgressText, % "Compilazione righe Excel  ( " i " / " Data.Length() " )"
@@ -209,7 +209,7 @@ inputFile := StrReplace(inputFile, "&quot;", """")
 inputFile := StrX(inputFile, "<Events>", 1, StrLen("<Events>"), "</Events>", 0, StrLen("</Events>"), "")
 
 ; Feedback grafico
-Gui, +AlwaysOnTop -MinimizeBox -MaximizeBox
+Gui, +AlwaysOnTop -SysMenu -Caption +Border
 Gui, Margin, 20,20
 Gui, Add, Text, w300 +Center vProgressText
 Gui, Add, Progress, w300 h20 +Smooth BackgroundC9C9C9 vProgressStatus
@@ -370,7 +370,7 @@ oExcel := ExportInExcel(ResultDead, Intest, oExcel)
 oExcel.Visible := 1
 
 Gui, Destroy
-MsgBox % "Elaborazione completata `n`n- Lock : " LockCount "`n- Deadlock : " DeadlockCount
+MsgBox, , Risultati, % "Elaborazione completata `n`n- Lock : " LockCount "`n- Deadlock : " DeadlockCount
 
 ExitApp
 
