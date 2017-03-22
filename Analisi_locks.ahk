@@ -126,7 +126,7 @@ ExportInExcel(Data, Intestazioni, ByRef oExcel=0){
 	for i, row in Data{
 		for j, col in row{
 			oExcel.ActiveCell.Offset( i-1,j-1).Value := col
-			if (j=7 or j=9) and (Not(InStr(col, "update") or InStr(col, "insert") or InStr(col, "delete") or InStr(col, "alter")))
+			if (j=7 or j=9) and (Not(InStr(col, "update") or InStr(col, "insert") or InStr(col, "delete") or InStr(col, "alter") or InStr(col, "drop")))
 				oExcel.ActiveCell.Offset( i-1,j-1).Font.Color := -16776961
 		}
 		GuiControl,,ProgressText, % "Compilazione righe Excel  ( " i " / " Data.Length() " )"
@@ -185,6 +185,52 @@ EvaluateDuration(ByRef AllData, ByRef Data){
 		GuiControl,,ProgressText, % "Calcolo durata eventi  ( " i " / " AllData.Length() " )"
 		GuiControl,,ProgressStatus,% (i * 100)/AllData.Length()
 	}
+}
+
+
+/*
+* Analyze a deadlock resources and return a record with the information extracted
+*/
+AnalyzeResource(tipo, lockText, _TempProcess){
+	if (tipo = "pagelock")
+		__strId := "pageid="""
+	else if (tipo = "keylock")
+		__strId := "indexname="""
+	else if (tipo = "objectlock")
+		__strId := "NULL_STRING"
+	else
+		return []
+	
+	_Owners 	:= []
+	_Waiters 	:= []
+	_pageId  	:= StrX(lockText, __strId, 1, StrLen(__strId), """", 1, StrLen(""""), "")
+	_objId  	:= StrX(lockText, "objectname=""", 1, StrLen("objectname="""), """", 1, StrLen(""""), "")
+	_objId 		:= StrReplace(_objId, "AHE_PEDR.dbo.", "") " "
+	_ownerList  := StrX(lockText, "<owner-list>", 1, StrLen("<owner-list>"), "</owner-list>", 1, StrLen("</owner-list>"), "")
+	_waiterList := StrX(lockText, "<waiter-list>", 1, StrLen("<waiter-list>"), "</waiter-list>", 1, StrLen("</waiter-list>"), "")
+	K1 = 0
+	while _owner := StrX(_ownerList, "<owner", K1, 0, ">", 1, 0, K1)
+	{
+		_ownerId   := StrX(_owner, "<owner id=""", 1, StrLen("<owner id="""), """", 1, StrLen(""""), "")
+		_ownerMode := StrX(_owner, "mode=""", 1, StrLen("mode="""), """", 1, StrLen(""""), "")
+		for i, row in _TempProcess
+			if(_ownerId = row[1]){
+				_Owners.push([i, _ownerMode, row[4]])
+				break
+			}
+	}
+	K2 = 0
+	while _waiter := StrX(_waiterList, "<waiter", K2, 0, ">", 1, 0, K2)
+	{
+		_waiterId   := StrX(_waiter, "<waiter id=""", 1, StrLen("<waiter id="""), """", 1, StrLen(""""), "")
+		_waiterMode := StrX(_waiter, "mode=""", 1, StrLen("mode="""), """", 1, StrLen(""""), "")
+		for i, row in _TempProcess
+			if(_waiterId = row[1]){
+				_Waiters.push([i, _ownerMode, row[4]])
+				break
+			}
+	}
+	return [tipo, _pageId, _objId, _Owners[1][1], _Owners[1][2], _Waiters[1][1], _Waiters[1][2]]
 }
 
 
@@ -297,37 +343,24 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 		; Lettura dati
 		_startTime := StrX(_event, START_BEGIN_STR, 1, StrLen(START_BEGIN_STR), COLUMN_END_STR, 1, StrLen(COLUMN_END_STR), "")
 		
+		
+		; Analisi delle risorse coinvolte nel deadlock
 		/*
-		* Analisi delle risorse coinvolte nel deadlock
+		_Resources := []
+		__N := 0
 		while _pagelock := StrX(_report, "<pagelock", __N, 0, "</pagelock>", 1, 0, __N)
-		{
-			_Owners := []
-			_Waiters := []
-			_ownerList  := StrX(_pagelock, "<owner-list>", 1, StrLen("<owner-list>"), "</owner-list>", 1, StrLen("</owner-list>"), "")
-			_waiterList := StrX(_pagelock, "<waiter-list>", 1, StrLen("<waiter-list>"), "</waiter-list>", 1, StrLen("</waiter-list>"), "")
+			_Resources.Push(AnalyzeResource("pagelock", _pagelock, _TempProcess))
+		__N := 0
+		while _keylock := StrX(_report, "<pagelock", __N, 0, "</pagelock>", 1, 0, __N)
+			_Resources.Push(AnalyzeResource("keylock", _pagelock, _TempProcess))
+		__N := 0
+		while _objectlock := StrX(_report, "<objectlock", __N, 0, "</objectlock>", 1, 0, __N)
+			_Resources.Push(AnalyzeResource("objectlock", _pagelock, _TempProcess))
+		
+		if (_Resources.Length() = 3)
 			
-			while _owner := StrX(_ownerList, "<owner", K1, 0, ">", 1, 0, K1)
-			{
-				_ownerId   := StrX(_owner, "<owner id=""", 1, StrLen("<owner id="""), """", 1, StrLen(""""), "")
-				_ownerMode := StrX(_owner, "mode=""", 1, StrLen("mode="""), """", 1, StrLen(""""), "")
-				for i, row in _TempProcess
-					if(_ownerId = row[1]){
-						_Owners.push([i, _ownerMode, row[4]])
-						break
-					}
-			}
+		else if (_Resources.Length() = 2)
 			
-			while _waiter := StrX(_waiterList, "<waiter", K2, 0, ">", 1, 0, K2)
-			{
-				_waiterId   := StrX(_waiter, "<waiter id=""", 1, StrLen("<waiter id="""), """", 1, StrLen(""""), "")
-				_waiterMode := StrX(_waiter, "mode=""", 1, StrLen("mode="""), """", 1, StrLen(""""), "")
-				for i, row in _TempProcess
-					if(_waiterId = row[1]){
-						_Waiters.push([i, _ownerMode, row[4]])
-						break
-					}
-			}
-		}
 		*/
 		
 		; Elaborazione dati
