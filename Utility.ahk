@@ -182,29 +182,6 @@ GuiEscape:
 
 
 ;-----------------------------------------------------------------------------
-; Menu di lancio per le versioni di CodePainter
-/*
-^+!c::
-	Gui, 3:Destroy
-	Gui, 3:+AlwaysOnTop -MinimizeBox -MaximizeBox
-	Gui, 3:Margin, 20,20
-	Gui, 3:Font, s11, Arial
-	Gui, 3:Add, Text,, CodePainter:
-	Gui, 3:Font, s10, Arial
-	Gui, 3:Add, Button, xm+10 w50 h30 gLaunchCodePainter, 55
-	Gui, 3:Add, Button, y+10 w50 h30 gLaunchCodePainter, 56
-	Gui, 3:Add, Button, y+10 w50 h30 gLaunchCodePainter, 59
-	Gui, 3:Add, Button, y+10 w50 h30 gLaunchCodePainter, 60
-	GuiControl,, LaunchCodePainter
-	Gui 3:Show
-	Return
-
-LaunchCodePainter:
-	GuiControlGet, var,, % A_GuiControl
-	run, C:\CP_local\CpwR%var%\cpl_host.exe cprfrontend
-	Gui, 3:Destroy
-	Return
-*/
 ^+!c::
 	Width := 150
 	Gui, Destroy
@@ -239,23 +216,6 @@ LaunchCodePainter:
 	Return
 
 ;-----------------------------------------------------------------------------
-; Lancio validazione SitePainter
-/*
-^+v::
-	Gui, 4:Destroy
-	Gui, 4:+AlwaysOnTop -MinimizeBox -MaximizeBox
-	Gui, 4:Margin, 20,20
-	Gui, 4:Font, s11, Arial
-	Gui, 4:Add, Text,x60 , Lancio validazione:
-	Gui, 4:Font, s10, Arial
-	Gui, 4:Add, Button, x20 y60 gValidateCodePainter, CodePainter
-	Gui, 4:Add, Button, x140 y60 gValidateSitePainter, SitePainter
-	GuiControl,, ValidateSitePainter
-	GuiControl,, ValidateCodePainter
-	Gui 4:Show
-	Return
-*/
-
 ^+v::
 	Width := 250
 	Gui, Destroy
@@ -284,25 +244,13 @@ LaunchCodePainter:
 ValidateSitePainter:
 	Gui, Destroy
 	sleep, 100
-	run "C:\Users\lavanzini\Desktop\Validate SitePainter\RemoteValidate.bat" srv-ip-build NBAVANZINISPI
+	run "D:\Scripts\RemoteValidate.bat" srv-ip-build NBAVANZINISPI
 	Return
 
 ValidateCodePainter:
-	; Gui, Destroy
-	; run, C:\Program Files\TightVNC\tvnviewer.exe
-	; Sleep 100
-	; Send, {Enter}
-	; x := (A_ScreenWidth / 2)
-	; y := (A_ScreenHeight / 2)
-	; WinWaitActive, Vnc Authentication
-	; Send, cesco{Enter}
-	; WinActivate, , pc-muletto
-	; WinWaitActive, ,pc-muletto
-	; Sleep, 500
-	; MouseClick, left, x, y
-	; Send, _ValidaLUA.vbs{Enter}
-	; Sleep, 3000
-	; WinClose, ,pc-muletto
+	Gui, Destroy
+	sleep, 100
+	run "D:\Scripts\RemoteValidate.bat" pc-muletto NBAVANZINICPR
 	Return
 
 
