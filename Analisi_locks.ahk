@@ -2,7 +2,7 @@
 * AutoHotkey Version: AutoHotkey 1.1
 * Author: 			  Avanzini Luca
 * Description:		  Extract information about locks and deadlocks from a SQL trace file
-* Last Modification:  21/03/2017
+* Last Modification:  27/03/2017
 * Version:  		  v1.13
 */
 
@@ -52,7 +52,6 @@ SetWorkingDir %A_ScriptDir%
 			 Result := []
 		  AllResult := []
 		 ResultDead := []
-
 
 
 /*
@@ -126,7 +125,7 @@ ExportInExcel(Data, Intestazioni, ByRef oExcel=0){
 	for i, row in Data{
 		for j, col in row{
 			oExcel.ActiveCell.Offset( i-1,j-1).Value := col
-			if (j=7 or j=9) and (Not(InStr(col, "update") or InStr(col, "insert") or InStr(col, "delete") or InStr(col, "alter") or InStr(col, "drop")))
+			if (j=7 or j=9) and (InStr(col, "select")) and (Not(InStr(col, "@P1")))
 				oExcel.ActiveCell.Offset( i-1,j-1).Font.Color := -16776961
 		}
 		GuiControl,,ProgressText, % "Compilazione righe Excel  ( " i " / " Data.Length() " )"
@@ -394,6 +393,7 @@ SortArray2DByElement(Result, 2)
 SortArray2DByElement(AllResult, 2)
 SortArray2DByElement(ResultDead, 2)
 EvaluateDuration(AllResult, Result)
+GuiControl,,ProgressText, % "Creazione file Excel.."
 
 ; Export dati in excel
 Intest := ["TIPO", "START TIME", "DATA", "TIME", "DURATA (s)", "LOGIN1", "QUERY1", "LOGIN2", "QUERY2", "ID"]

@@ -55,22 +55,29 @@ SostituzioneQuery:
     InputBox, query, Inserire nome query, , ,375, 100
     if ErrorLevel
       ExitApp
+	current  := oWorkbook.ActiveCell
     SQLquery := oWorkbook.ActiveCell.Value
     oWorkbook.ActiveCell.Value := query
+	oWorkbook.ActiveCell.Font.Bold := true
     oWorkbook.Range("F2").Select
     
     While oWorkbook.ActiveCell.Value{
-      if (oWorkbook.ActiveCell.Value = SQLquery)
+      if (oWorkbook.ActiveCell.Value = SQLquery){
         oWorkbook.ActiveCell.Value := query
+		oWorkbook.ActiveCell.Font.Bold := true
+		}
       oWorkbook.ActiveCell.Offset(1,0).select
     }
     
     oWorkbook.Range("H2").Select
     While oWorkbook.ActiveCell.Value{
-      if (oWorkbook.ActiveCell.Value = SQLquery)
+      if (oWorkbook.ActiveCell.Value = SQLquery){
         oWorkbook.ActiveCell.Value := query
+		oWorkbook.ActiveCell.Font.Bold := true
+		}
       oWorkbook.ActiveCell.Offset(1,0).select
     }
+	current.select
     ExitApp
     
 CopiaFormula:
