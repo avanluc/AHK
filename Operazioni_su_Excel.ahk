@@ -59,7 +59,7 @@ SostituzioneQuery:
     SQLquery := oWorkbook.ActiveCell.Value
     oWorkbook.ActiveCell.Value := query
 	oWorkbook.ActiveCell.Font.Bold := true
-    oWorkbook.Range("F2").Select
+    oWorkbook.Range("G2").Select
     
     While oWorkbook.ActiveCell.Value{
       if (oWorkbook.ActiveCell.Value = SQLquery){
@@ -69,7 +69,7 @@ SostituzioneQuery:
       oWorkbook.ActiveCell.Offset(1,0).select
     }
     
-    oWorkbook.Range("H2").Select
+    oWorkbook.Range("J2").Select
     While oWorkbook.ActiveCell.Value{
       if (oWorkbook.ActiveCell.Value = SQLquery){
         oWorkbook.ActiveCell.Value := query

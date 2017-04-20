@@ -2,8 +2,8 @@
 * AutoHotkey Version: AutoHotkey 1.1
 * Author: 			  Avanzini Luca
 * Description:		  Extract information about locks and deadlocks from a SQL trace file
-* Last Modification:  27/03/2017
-* Version:  		  v1.13
+* Last Modification:  13/04/2017
+* Version:  		  v1.2
 */
 
 #NoEnv
@@ -125,16 +125,16 @@ ExportInExcel(Data, Intestazioni, ByRef oExcel=0){
 	for i, row in Data{
 		for j, col in row{
 			oExcel.ActiveCell.Offset( i-1,j-1).Value := col
-			if (j=7 or j=9) and (InStr(col, "select")) and (Not(InStr(col, "@P1")))
+			if (j=8 or j=11) and (InStr(col, "select")) and (Not(InStr(col, "@P1")))
 				oExcel.ActiveCell.Offset( i-1,j-1).Font.Color := -16776961
 		}
 		GuiControl,,ProgressText, % "Compilazione righe Excel  ( " i " / " Data.Length() " )"
 		GuiControl,,ProgressStatus,% (i * 100)/Data.Length()
 	}
 
-	; Rimuovi la colonna con lo StartTime
+	; Rimuovi la colonna con lo StartTime e l'identificativo
 	if(Data[1][1] = "lock")
-		oExcel.Columns(10).EntireColumn.Delete
+		oExcel.Columns(12).EntireColumn.Delete
 	oExcel.Columns(2).EntireColumn.Delete
 	
 	; Abilita l'autofit e setta MAX WIDTH
@@ -167,17 +167,17 @@ RepeatedProcess(Array, query){
 */
 EvaluateDuration(ByRef AllData, ByRef Data){
 	max := 0
-	prevId := AllData[1][10]
+	prevId := AllData[1][12]
 	for i, row in AllData{
-		if( row[10] != prevId ){
+		if( row[12] != prevId ){
 			for _i, _row in Data{
-				if( _row[10] = prevId ){
+				if( _row[12] = prevId ){
 					_row[5] := max
 					break
 				}		
 			}
 			max := 0
-			prevId := row[10]
+			prevId := row[12]
 		}
 		if(row[5] > max)
 			max := row[5]
@@ -232,6 +232,17 @@ AnalyzeResource(tipo, lockText, _TempProcess){
 	return [tipo, _pageId, _objId, _Owners[1][1], _Owners[1][2], _Waiters[1][1], _Waiters[1][2]]
 }
 
+
+CheckClient(client){
+	if (client = "")
+		return " "
+	else if (InStr(client, "ENTERPRISE"))
+		return "AHE"
+	else if (InStr(client, "SQL Server"))
+		return "SQL Server Management Studio"
+	else 
+		return client
+}
 
 /*
 * Inizio Esecuzione
@@ -291,8 +302,12 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 			_login1 := SubStr(_client1, 67, StrLen(SubStr(_client1, 67))-10)
 		if (_login2 = "")
 			_login2 := SubStr(_client2, 67, StrLen(SubStr(_client2, 67))-10)
+		_client1  := CheckClient(_client1)
+		_client2  := CheckClient(_client2)
 		_login1   := StrReplace(_login1, "PEDROLLOSPA\", "") " "
 		_login2   := StrReplace(_login2, "PEDROLLOSPA\", "") " "
+		_login1   := StrReplace(_login1, "LINZELECTRIC\", "") " "
+		_login2   := StrReplace(_login2, "LINZELECTRIC\", "") " "
 		_duration := Floor(intParse(_duration)/1000000)
 		_date     := SubStr(_startTime,1,10)
 		_time     := SubStr(SubStr(_startTime, 1, StrLen(_startTime)-6),12)
@@ -302,10 +317,10 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 		_query2   := RegExReplace(RegExReplace(_query2, "^`r`n[\t]+", ""), "`n", "")
 		
 		; Scrittura dati
-		AllResult.Push(["lock", _startTime, _date, _time, _duration, _login1, _query1, _login2, _query2, _id])
+		AllResult.Push(["lock", _startTime, _date, _time, _duration, _client1, _login1, _query1, _client2, _login2, _query2, _id])
 		if(_duration < 10){
 			LockCount := LockCount + 1	
-			Result.Push(["lock", _startTime, _date, _time, _duration, _login1, _query1, _login2, _query2, _id, " "])
+			Result.Push(["lock", _startTime, _date, _time, _duration, _client1, _login1, _query1, _client2, _login2, _query2, _id, " "])
 		}
 	}
 	; GESTIONE DEADLOCK
@@ -331,11 +346,13 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 			if (_login = "")
 				_login := SubStr(_client, 67, StrLen(SubStr(_client, 67))-10)
 			_login := StrReplace(_login, "PEDROLLOSPA\", "") " "
+			_login := StrReplace(_login, "LINZELECTRIC\", "") " "
+			_client := CheckClient(_client)
 			_query := RegExReplace(RegExReplace(_query, "^`r`n[\t]+", ""), "`n", "")
 			_id    := _processId _ownerId _desc
 			
 			if( Not(RepeatedProcess(_TempProcess, _query)) )
-				_TempProcess.Push([_processId, _id, _login, _query])
+				_TempProcess.Push([_processId, _id, _client, _login, _query])
 			else 
 				_ExcEvt := _ExcEvt + 1 
 		}
@@ -373,6 +390,7 @@ while _event := StrX(inputFile, EVENT_BEGIN_STR, N, 0, EVENT_END_STR, 1, 0, N)
 		for i, row in _TempProcess {
 			_Appo.Push(row[3])
 			_Appo.Push(row[4])
+			_Appo.Push(row[5])
 		}
 		_Appo.Push(" ")
 		ResultDead.Push(_Appo)
@@ -396,9 +414,9 @@ EvaluateDuration(AllResult, Result)
 GuiControl,,ProgressText, % "Creazione file Excel.."
 
 ; Export dati in excel
-Intest := ["TIPO", "START TIME", "DATA", "TIME", "DURATA (s)", "LOGIN1", "QUERY1", "LOGIN2", "QUERY2", "ID"]
+Intest := ["TIPO", "START TIME", "DATA", "TIME", "DURATA (s)", "CLIENT1", "LOGIN1", "QUERY1", "CLIENT2", "LOGIN2", "QUERY2", "ID"]
 oExcel := ExportInExcel(Result, Intest)
-Intest := ["TIPO", "START TIME", "DATA", "TIME", "EXCHANGE EVENT", "LOGIN1", "QUERY1 (vittima)", "LOGIN2", "QUERY2", "LOGIN3", "QUERY3"]
+Intest := ["TIPO", "START TIME", "DATA", "TIME", "EXCHANGE EVENT", "CLIENT1", "LOGIN1", "QUERY1 (vittima)", "CLIENT2", "LOGIN2", "QUERY2", "LOGIN3", "QUERY3"]
 oExcel := ExportInExcel(ResultDead, Intest, oExcel)
 oExcel.Visible := 1
 

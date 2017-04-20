@@ -217,6 +217,14 @@ LaunchCodePainter:
 
 ;-----------------------------------------------------------------------------
 ^+v::
+	run "D:\Scripts\RemoteValidate.bat" srv-ip-build NBAVANZINISPI
+	sleep, 100
+	run "D:\Scripts\RemoteValidate.bat" pc-muletto NBAVANZINICPR
+	sleep, 100
+	Return
+
+/*
+^+v::
 	Width := 250
 	Gui, Destroy
 	Gui, +AlwaysOnTop
@@ -252,7 +260,7 @@ ValidateCodePainter:
 	sleep, 100
 	run "D:\Scripts\RemoteValidate.bat" pc-muletto NBAVANZINICPR
 	Return
-
+*/
 
 
 ;-----------------------------------------------------------------------------
